@@ -39,7 +39,7 @@ public interface JvnObject extends Serializable {
      *
      * @throws JvnException
      **/
-    public void jvnUnLock()
+    public void jvnUnlock()
             throws jvn.JvnException;
 
 

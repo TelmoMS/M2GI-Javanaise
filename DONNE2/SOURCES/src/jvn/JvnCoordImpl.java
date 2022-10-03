@@ -9,9 +9,12 @@
 
 package jvn;
 
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.util.HashMap;
 import java.io.Serializable;
-
+import java.util.ArrayList;
 
 public class JvnCoordImpl
         extends UnicastRemoteObject
@@ -23,6 +26,10 @@ public class JvnCoordImpl
      */
     private static final long serialVersionUID = 1L;
 
+    private HashMap<Integer, JvnRemoteServer> writers;
+    private HashMap<Integer, ArrayList<JvnRemoteServer>> readers;
+    private HashMap<String, Integer> nameIdMap;
+    private HashMap<Integer, JvnObject> idObjectMap;
     private int newObjectId;
 
     /**
@@ -31,10 +38,16 @@ public class JvnCoordImpl
      * @throws JvnException
      **/
     private JvnCoordImpl() throws Exception {
+        super();
+        this.nameIdMap = new HashMap<String, Integer>();
+        this.idObjectMap = new HashMap<Integer, JvnObject>();
+        this.writers = new HashMap<Integer, JvnRemoteServer>();
+        this.readers = new HashMap<Integer, ArrayList<JvnRemoteServer>>();
         this.newObjectId = 0;
 
-        Registry r = LocateRegistry.createRegistry(3000);
+        Registry r = LocateRegistry.createRegistry(2100);
         r.bind("JvnCoord", this);
+        System.out.println("JvnCoordImpl created");
     }
 
     /**
@@ -43,7 +56,7 @@ public class JvnCoordImpl
      *
      * @throws java.rmi.RemoteException,JvnException
      **/
-    public int jvnGetObjectId()
+    public synchronized int jvnGetObjectId()
             throws java.rmi.RemoteException, jvn.JvnException {
         // to be completed
         return newObjectId++;
@@ -58,9 +71,16 @@ public class JvnCoordImpl
      * @param js  : the remote reference of the JVNServer
      * @throws java.rmi.RemoteException,JvnException
      **/
-    public void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
+    public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed
+        if (nameIdMap.containsKey(jon)) {
+            throw new JvnException("Object already registered");
+        }
+        int id = jo.jvnGetObjectId();
+        nameIdMap.put(jon, id);
+        idObjectMap.put(id, jo);
+        writers.put(id, js);
+        readers.put(id, new ArrayList<JvnRemoteServer>());
     }
 
     /**
@@ -70,10 +90,15 @@ public class JvnCoordImpl
      * @param js  : the remote reference of the JVNServer
      * @throws java.rmi.RemoteException,JvnException
      **/
-    public JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
+    public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed
-        return null;
+                
+        if (!nameIdMap.containsKey(jon)) {
+            return null;
+        }
+        int idObject = nameIdMap.get(jon);
+        System.out.println("JvnCoordImpl: jvnLookupObject: " + jon + " id: " + idObject);
+        return idObjectMap.get(idObject);
     }
 
     /**
@@ -84,10 +109,25 @@ public class JvnCoordImpl
      * @return the current JVN object state
      * @throws java.rmi.RemoteException, JvnException
      **/
-    public Serializable jvnLockRead(int joi, JvnRemoteServer js)
+    public synchronized Serializable jvnLockRead(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        // to be completed
-        return null;
+        if (!idObjectMap.containsKey(joi)) {
+            throw new JvnException("Object not found");
+        }
+        if (writers.containsKey(joi)) {
+            if (!writers.get(joi).equals(js)) {
+                writers.get(joi).jvnInvalidateWriterForReader(joi);
+                writers.remove(joi);
+            }
+            return idObjectMap.get(joi).jvnGetSharedObject();
+        }
+        if (readers.containsKey(joi)) {
+            if (!readers.get(joi).contains(js)) {
+                readers.get(joi).add(js);
+            }
+            return idObjectMap.get(joi).jvnGetSharedObject();
+        }
+        throw new JvnException("Object not found");
     }
 
     /**
@@ -98,10 +138,26 @@ public class JvnCoordImpl
      * @return the current JVN object state
      * @throws java.rmi.RemoteException, JvnException
      **/
-    public Serializable jvnLockWrite(int joi, JvnRemoteServer js)
+    public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        // to be completed
-        return null;
+        if (!idObjectMap.containsKey(joi)) {
+            throw new JvnException("Object not found");
+        }
+        if (writers.containsKey(joi)) {
+            if (!writers.get(joi).equals(js)) {
+                writers.get(joi).jvnInvalidateWriter(joi);
+                writers.remove(joi);
+            }
+            return idObjectMap.get(joi).jvnGetSharedObject();
+        }
+        if (readers.containsKey(joi)) {
+            for (JvnRemoteServer reader : readers.get(joi)) {
+                reader.jvnInvalidateReader(joi);
+            }
+            readers.remove(joi);
+        }
+        writers.put(Integer.valueOf(joi), js);
+        return idObjectMap.get(joi).jvnGetSharedObject();
     }
 
     /**
@@ -110,10 +166,13 @@ public class JvnCoordImpl
      * @param js : the remote reference of the server
      * @throws java.rmi.RemoteException, JvnException
      **/
-    public void jvnTerminate(JvnRemoteServer js)
+    public synchronized void jvnTerminate(JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        // to be completed
+        //readers.values().remove(js);
+        writers.values().remove(js);
+    }
+
+    public static void main(String[] args) throws Exception {
+        JvnCoordImpl coord = new JvnCoordImpl();
     }
 }
-
- 
