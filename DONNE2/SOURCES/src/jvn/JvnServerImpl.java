@@ -146,6 +146,7 @@ public class JvnServerImpl
         try {
             return jrc.jvnLockRead(joi, this);
         } catch (RemoteException e) {
+            System.out.println(e.getMessage());
             throw new JvnException("Remote exception locking read");
         }
     }
@@ -162,6 +163,7 @@ public class JvnServerImpl
         try {
             return jrc.jvnLockWrite(joi, this);
         } catch (RemoteException e) {
+            System.out.println(e.getMessage());
             throw new JvnException("Remote exception locking write");
         }
     }

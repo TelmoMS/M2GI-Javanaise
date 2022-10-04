@@ -73,14 +73,13 @@ public class JvnCoordImpl
      **/
     public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
+        System.out.println("JvnCoordImpl: jvnRegisterObject"); 
         if (nameIdMap.containsKey(jon)) {
             throw new JvnException("Object already registered");
         }
         int id = jo.jvnGetObjectId();
         nameIdMap.put(jon, id);
         idObjectMap.put(id, jo);
-        writers.put(id, js);
-        readers.put(id, new ArrayList<JvnRemoteServer>());
     }
 
     /**
@@ -111,8 +110,9 @@ public class JvnCoordImpl
      **/
     public synchronized Serializable jvnLockRead(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
+        System.out.println("JvnCoordImpl: jvnLockRead: " + joi);
         if (!idObjectMap.containsKey(joi)) {
-            throw new JvnException("Object not found");
+            throw new JvnException("Object not found on Lock Read");
         }
         if (writers.containsKey(joi)) {
             if (!writers.get(joi).equals(js)) {
@@ -125,9 +125,11 @@ public class JvnCoordImpl
             if (!readers.get(joi).contains(js)) {
                 readers.get(joi).add(js);
             }
-            return idObjectMap.get(joi).jvnGetSharedObject();
+        } else {
+            readers.put(joi, new ArrayList<JvnRemoteServer>());
+            readers.get(joi).add(js);
         }
-        throw new JvnException("Object not found");
+        return idObjectMap.get(joi).jvnGetSharedObject();
     }
 
     /**
@@ -140,13 +142,15 @@ public class JvnCoordImpl
      **/
     public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
+        System.out.println("JvnCoordImpl: jvnLockWrite: " + joi); 
         if (!idObjectMap.containsKey(joi)) {
-            throw new JvnException("Object not found");
+            throw new JvnException("Object not found on Lock Write");
         }
         if (writers.containsKey(joi)) {
             if (!writers.get(joi).equals(js)) {
                 writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
+                writers.put(joi, js);
             }
             return idObjectMap.get(joi).jvnGetSharedObject();
         }

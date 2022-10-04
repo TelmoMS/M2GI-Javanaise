@@ -29,7 +29,7 @@ public class Irc {
 			JvnServerImpl js = JvnServerImpl.jvnGetServer();
 			
 			// look up the IRC object in the JVN server
-			// if not found, create it, and register it in the JVN server*
+			// if not found, create it, and register it in the JVN server
 			JvnObject jo = js.jvnLookupObject("IRC");
 
 			if (jo == null) {

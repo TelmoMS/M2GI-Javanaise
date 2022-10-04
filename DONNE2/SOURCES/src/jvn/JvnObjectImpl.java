@@ -26,11 +26,10 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnInvalidateReader() throws JvnException {
         switch (state) {
-            case RLT, WLT, RLT_WLC:
+            case RLT:
                 try {
-                    while (state == lockState.RLT || state == lockState.WLT || state == lockState.RLT_WLC) {
-                        wait();
-                    }
+                    wait();
+                    state = lockState.NL;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
@@ -44,11 +43,10 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized Serializable jvnInvalidateWriter() throws JvnException {
         switch (state) {
-            case RLT, WLT, RLT_WLC:
+            case WLT, RLT_WLC:
                 try {
-                    while (state == lockState.RLT || state == lockState.WLT || state == lockState.RLT_WLC) {
-                        wait();
-                    }
+                    wait();
+                    state = lockState.NL;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
@@ -65,14 +63,11 @@ public class JvnObjectImpl implements JvnObject {
         switch (state) {
             case WLT, RLT_WLC:
                 try {
-                    while (state == lockState.WLT || state == lockState.RLT_WLC) {
-                        wait();
-                    }
+                    wait();
+                    state = lockState.RLT;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
-                break;
-            case RLT:
                 break;
             default:
                 state = lockState.RLT;
@@ -90,27 +85,34 @@ public class JvnObjectImpl implements JvnObject {
             case WLC:
                 state = lockState.RLT_WLC;
                 break;
-            case WLT, RLT, RLT_WLC:
-                throw new JvnException("Lock already taken");
-            default:
+            case NL:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
                 Serializable jo = js.jvnLockRead(id);
                 state = lockState.RLT;
                 break;
+            case RLT:
+                break;
+            default:
+                throw new JvnException("Invalid lock state : " + state);
         }
+        System.out.println("Read lock taken");
     }
 
     @Override
     public synchronized void jvnLockWrite() throws JvnException {
         switch (state) {
             case WLT:
-                throw new JvnException("Lock already taken");
+                break;
+            case WLC:
+                state = lockState.WLT;
+                break;
             default:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
                 Serializable jo = js.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
         }
+        System.out.println("Write lock taken");
     }
 
     @Override
@@ -118,16 +120,19 @@ public class JvnObjectImpl implements JvnObject {
         switch (state) {
             case RLT:
                 state = lockState.RLC;
+                System.out.println("Read lock cached");
                 break;
             case WLT:
                 state = lockState.WLC;
+                System.out.println("Write lock cached");
                 break;
             case RLT_WLC:
                 state = lockState.WLC;
+                System.out.println("Read lock taken - Write lock cached");
                 break;
             default:
         }
-        notifyAll();
+        notify();
     }
 
     public void jvnSetObjectState(Serializable o) throws JvnException {
