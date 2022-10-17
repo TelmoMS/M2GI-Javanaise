@@ -91,6 +91,7 @@ class readListener implements ActionListener {
 			// lock the object in read mode
 			irc.sentence.jvnLockRead();
 
+
 			// invoke the method
 			String s = ((Sentence) (irc.sentence.jvnGetSharedObject())).read();
 

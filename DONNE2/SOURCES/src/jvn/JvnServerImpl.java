@@ -198,8 +198,9 @@ public class JvnServerImpl
             throws java.rmi.RemoteException, jvn.JvnException {
         if (idObjectMap.containsKey(joi)) {
             JvnObject jo = idObjectMap.get(joi);
-            jo.jvnInvalidateWriter();
-            return jo.jvnGetSharedObject();
+            //jo.jvnInvalidateWriter();
+            //return jo.jvnGetSharedObject();
+            return jo.jvnInvalidateWriter();
         }
         return null;
     }
@@ -215,8 +216,8 @@ public class JvnServerImpl
             throws java.rmi.RemoteException, jvn.JvnException {
         if (idObjectMap.containsKey(joi)) {
             JvnObject jo = idObjectMap.get(joi);
-            jo.jvnInvalidateWriterForReader();
-            return jo.jvnGetSharedObject();
+            return jo.jvnInvalidateWriterForReader();
+            //return jo.jvnGetSharedObject();
         }
         return null;
     }

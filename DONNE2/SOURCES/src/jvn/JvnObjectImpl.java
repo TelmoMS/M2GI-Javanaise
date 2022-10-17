@@ -55,7 +55,7 @@ public class JvnObjectImpl implements JvnObject {
                 state = lockState.NL;
                 break;
         }
-        return object;
+        return this;
     }
 
     @Override
@@ -73,13 +73,15 @@ public class JvnObjectImpl implements JvnObject {
                 state = lockState.RLT;
                 break;
         }
-        return object;
+        return this;
     }
 
     @Override
     public synchronized void jvnLockRead() throws JvnException {
         switch (state) {
             case RLC:
+                JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
+                object = js1.jvnLockRead(id);
                 state = lockState.RLT;
                 break;
             case WLC:
@@ -87,7 +89,7 @@ public class JvnObjectImpl implements JvnObject {
                 break;
             case NL:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
-                Serializable jo = js.jvnLockRead(id);
+                object = js.jvnLockRead(id);
                 state = lockState.RLT;
                 break;
             case RLT:
@@ -102,13 +104,16 @@ public class JvnObjectImpl implements JvnObject {
     public synchronized void jvnLockWrite() throws JvnException {
         switch (state) {
             case WLT:
+                JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
+                object = js1.jvnLockWrite(id);
+                state = lockState.WLT;
                 break;
             case WLC:
                 state = lockState.WLT;
                 break;
             default:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
-                Serializable jo = js.jvnLockWrite(id);
+                object = js.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
         }
