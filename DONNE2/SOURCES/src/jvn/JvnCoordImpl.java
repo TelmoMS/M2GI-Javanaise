@@ -20,7 +20,6 @@ public class JvnCoordImpl
         extends UnicastRemoteObject
         implements JvnRemoteCoord {
 
-
     /**
      *
      */
@@ -73,7 +72,7 @@ public class JvnCoordImpl
      **/
     public synchronized void jvnRegisterObject(String jon, JvnObject jo, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
-        System.out.println("JvnCoordImpl: jvnRegisterObject"); 
+        System.out.println("JvnCoordImpl: jvnRegisterObject");
         if (nameIdMap.containsKey(jon)) {
             throw new JvnException("Object already registered");
         }
@@ -91,7 +90,7 @@ public class JvnCoordImpl
      **/
     public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
-                
+
         if (!nameIdMap.containsKey(jon)) {
             return null;
         }
@@ -115,13 +114,14 @@ public class JvnCoordImpl
             throw new JvnException("Object not found on Lock Read");
         }
         if (writers.containsKey(joi)) {
+            JvnObject obj;
             if (!writers.get(joi).equals(js)) {
-                JvnObject obj = (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi);
-                idObjectMap.put(joi, obj);
-                //writers.get(joi).jvnInvalidateWriterForReader(joi);
-                writers.remove(joi);
+                obj = (JvnObject) writers.get(joi).jvnInvalidateWriter(joi);
+            } else {
+                obj = (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi);
             }
-            return idObjectMap.get(joi).jvnGetSharedObject();
+            idObjectMap.put(joi, obj);
+            writers.remove(joi);
         }
         if (readers.containsKey(joi)) {
             if (!readers.get(joi).contains(js)) {
@@ -144,20 +144,19 @@ public class JvnCoordImpl
      **/
     public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        System.out.println("JvnCoordImpl: jvnLockWrite: " + joi); 
+        System.out.println("JvnCoordImpl: jvnLockWrite: " + joi);
         if (!idObjectMap.containsKey(joi)) {
             throw new JvnException("Object not found on Lock Write");
         }
         if (writers.containsKey(joi)) {
             if (!writers.get(joi).equals(js)) {
-                idObjectMap.put(joi,(JvnObject)writers.get(joi).jvnInvalidateWriter(joi));
-                //writers.get(joi).jvnInvalidateWriter(joi);
+                JvnObject obj = (JvnObject) writers.get(joi).jvnInvalidateWriter(joi);
+                idObjectMap.put(joi, obj);
+                // writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
-                writers.put(joi, js);
             }
-            return idObjectMap.get(joi).jvnGetSharedObject();
         }
-        //synchro problems
+        // synchro problems
         if (readers.containsKey(joi)) {
             for (JvnRemoteServer reader : readers.get(joi)) {
                 // Don't invalidate reader if it's the server asking for the write lock
@@ -179,7 +178,7 @@ public class JvnCoordImpl
      **/
     public synchronized void jvnTerminate(JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        //readers.values().remove(js);
+        // readers.values().remove(js);
         writers.values().remove(js);
     }
 

@@ -68,15 +68,15 @@ public class JvnObjectImpl implements JvnObject {
             case WLT, RLT_WLC:
                 try {
                     wait();
-                    System.out.println(state + " -> NL");
-                    state = lockState.RLT;
+                    System.out.println(state + " -> RLC");
+                    state = lockState.RLC;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
                 break;
             default:
-                System.out.println(state + " -> NL");
-                state = lockState.RLT;
+                System.out.println(state + " -> RLC");
+                state = lockState.RLC;
                 break;
         }
         return this;
