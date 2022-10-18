@@ -139,8 +139,4 @@ public class JvnObjectImpl implements JvnObject {
         }
         notify();
     }
-
-    public void jvnSetObjectState(Serializable o) throws JvnException {
-        object = o;
-    }
 }

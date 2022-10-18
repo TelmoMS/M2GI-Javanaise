@@ -116,8 +116,9 @@ public class JvnCoordImpl
         }
         if (writers.containsKey(joi)) {
             if (!writers.get(joi).equals(js)) {
-                idObjectMap.put(joi,(JvnObject)writers.get(joi).jvnInvalidateWriterForReader(joi));
-            //    writers.get(joi).jvnInvalidateWriterForReader(joi);
+                JvnObject obj = (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi);
+                idObjectMap.put(joi, obj);
+                //writers.get(joi).jvnInvalidateWriterForReader(joi);
                 writers.remove(joi);
             }
             return idObjectMap.get(joi).jvnGetSharedObject();
@@ -152,20 +153,18 @@ public class JvnCoordImpl
                 idObjectMap.put(joi,(JvnObject)writers.get(joi).jvnInvalidateWriter(joi));
                 //writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
-                writers.put(joi, js);
+                //writers.put(joi, js);
             }
             return idObjectMap.get(joi).jvnGetSharedObject();
         }
         //synchro problems
         if (readers.containsKey(joi)) {
             for (JvnRemoteServer reader : readers.get(joi)) {
-                reader.jvnInvalidateReader(joi);
-                //remove the reader from the list
-                readers.get(joi).remove(reader);
+                // Don't invalidate reader if it's the server asking for the write lock
+                if (!reader.equals(js)) {
+                    reader.jvnInvalidateReader(joi);
+                }
             }
-/*
-            idObjectMap.get(joi).jvnInvalidateReader();
-*/
             readers.remove(joi);
         }
         writers.put(Integer.valueOf(joi), js);
