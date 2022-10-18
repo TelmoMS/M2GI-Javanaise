@@ -152,7 +152,7 @@ public class JvnCoordImpl
                 idObjectMap.put(joi,(JvnObject)writers.get(joi).jvnInvalidateWriter(joi));
                 //writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
-//                writers.put(joi, js);
+                writers.put(joi, js);
             }
             return idObjectMap.get(joi).jvnGetSharedObject();
         }
@@ -160,7 +160,12 @@ public class JvnCoordImpl
         if (readers.containsKey(joi)) {
             for (JvnRemoteServer reader : readers.get(joi)) {
                 reader.jvnInvalidateReader(joi);
+                //remove the reader from the list
+                readers.get(joi).remove(reader);
             }
+/*
+            idObjectMap.get(joi).jvnInvalidateReader();
+*/
             readers.remove(joi);
         }
         writers.put(Integer.valueOf(joi), js);

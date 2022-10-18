@@ -80,8 +80,8 @@ public class JvnObjectImpl implements JvnObject {
     public synchronized void jvnLockRead() throws JvnException {
         switch (state) {
             case RLC:
-                JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
-                object = js1.jvnLockRead(id);
+                /*JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
+                object = js1.jvnLockRead(id);*/
                 state = lockState.RLT;
                 break;
             case WLC:
@@ -103,14 +103,14 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnLockWrite() throws JvnException {
         switch (state) {
-            case WLT:
+            case WLT,WLC:
                 JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
                 object = js1.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
-            case WLC:
+/*            case WLC:
                 state = lockState.WLT;
-                break;
+                break;*/
             default:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
                 object = js.jvnLockWrite(id);
@@ -125,15 +125,15 @@ public class JvnObjectImpl implements JvnObject {
         switch (state) {
             case RLT:
                 state = lockState.RLC;
-                System.out.println("Read lock cached");
+                System.out.println("RLT -> RLC");
                 break;
             case WLT:
                 state = lockState.WLC;
-                System.out.println("Write lock cached");
+                System.out.println("WLT -> WLC");
                 break;
             case RLT_WLC:
                 state = lockState.WLC;
-                System.out.println("Read lock taken - Write lock cached");
+                System.out.println("RLT_WLC -> WLC");
                 break;
             default:
         }
