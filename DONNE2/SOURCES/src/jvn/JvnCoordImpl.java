@@ -178,7 +178,11 @@ public class JvnCoordImpl
      **/
     public synchronized void jvnTerminate(JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
-        // readers.values().remove(js);
+        // Loop through the readers map
+        readers.forEach((key, value) -> {
+            // Remove the server from the list of readers if it exists
+            value.remove(js);
+        });
         writers.values().remove(js);
     }
 
