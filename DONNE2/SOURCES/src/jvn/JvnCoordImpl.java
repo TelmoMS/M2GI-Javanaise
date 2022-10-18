@@ -186,6 +186,7 @@ public class JvnCoordImpl
         writers.values().remove(js);
     }
 
+    
     public static void main(String[] args) throws Exception {
         JvnCoordImpl coord = new JvnCoordImpl();
     }
