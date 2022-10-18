@@ -153,7 +153,7 @@ public class JvnCoordImpl
                 idObjectMap.put(joi,(JvnObject)writers.get(joi).jvnInvalidateWriter(joi));
                 //writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
-                //writers.put(joi, js);
+                writers.put(joi, js);
             }
             return idObjectMap.get(joi).jvnGetSharedObject();
         }
@@ -167,7 +167,7 @@ public class JvnCoordImpl
             }
             readers.remove(joi);
         }
-        writers.put(Integer.valueOf(joi), js);
+        writers.put(joi, js);
         return idObjectMap.get(joi).jvnGetSharedObject();
     }
 

@@ -6,7 +6,7 @@ public class JvnObjectImpl implements JvnObject {
     private int id;
     private Serializable object;
     private lockState state;
-    
+
     public JvnObjectImpl(int id, Serializable object) {
         this.id = id;
         this.object = object;
@@ -29,12 +29,14 @@ public class JvnObjectImpl implements JvnObject {
             case RLT:
                 try {
                     wait();
+                    System.out.println("RLT -> NL");
                     state = lockState.NL;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
                 break;
             default:
+                System.out.println(state + " -> NL");
                 state = lockState.NL;
                 break;
         }
@@ -46,12 +48,14 @@ public class JvnObjectImpl implements JvnObject {
             case WLT, RLT_WLC:
                 try {
                     wait();
+                    System.out.println(state + " -> NL");
                     state = lockState.NL;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
                 break;
             default:
+                System.out.println(state + " -> NL");
                 state = lockState.NL;
                 break;
         }
@@ -64,12 +68,14 @@ public class JvnObjectImpl implements JvnObject {
             case WLT, RLT_WLC:
                 try {
                     wait();
+                    System.out.println(state + " -> NL");
                     state = lockState.RLT;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
                 }
                 break;
             default:
+                System.out.println(state + " -> NL");
                 state = lockState.RLT;
                 break;
         }
@@ -78,46 +84,56 @@ public class JvnObjectImpl implements JvnObject {
 
     @Override
     public synchronized void jvnLockRead() throws JvnException {
+        System.out.println("Locking read...");
         switch (state) {
             case RLC:
-                /*JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
-                object = js1.jvnLockRead(id);*/
+                /*
+                 * JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
+                 * object = js1.jvnLockRead(id);
+                 */
                 state = lockState.RLT;
+                System.out.println("RLC -> RLT");
                 break;
             case WLC:
                 state = lockState.RLT_WLC;
+                System.out.println("WLC -> RLT_WLC");
                 break;
             case NL:
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
                 object = js.jvnLockRead(id);
+                System.out.println("NL -> RLT");
                 state = lockState.RLT;
                 break;
             case RLT:
+                System.out.println("Lock already taken doing nothing");
                 break;
             default:
                 throw new JvnException("Invalid lock state : " + state);
         }
-        System.out.println("Read lock taken");
     }
 
     @Override
     public synchronized void jvnLockWrite() throws JvnException {
+        System.out.println("Locking write...");
         switch (state) {
-            case WLT,WLC:
+            case WLT, WLC:
+                System.out.println(state + " -> WLT");
                 JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
                 object = js1.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
-/*            case WLC:
-                state = lockState.WLT;
-                break;*/
+            /*
+             * case WLC:
+             * state = lockState.WLT;
+             * break;
+             */
             default:
+                System.out.println(state + " -> WLT");
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();
                 object = js.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
         }
-        System.out.println("Write lock taken");
     }
 
     @Override
