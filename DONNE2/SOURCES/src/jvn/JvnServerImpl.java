@@ -217,7 +217,6 @@ public class JvnServerImpl
         if (idObjectMap.containsKey(joi)) {
             JvnObject jo = idObjectMap.get(joi);
             return jo.jvnInvalidateWriterForReader();
-            //return jo.jvnGetSharedObject();
         }
         return null;
     }

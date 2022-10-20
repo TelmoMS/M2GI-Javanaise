@@ -8,7 +8,9 @@
 
 package irc;
 
-public class Sentence implements java.io.Serializable {
+import jvn.DynamicProxy.JvnOperation;
+
+public class Sentence implements java.io.Serializable, InterfaceSentence {
 	/**
 	 * 
 	 */
@@ -19,10 +21,12 @@ public class Sentence implements java.io.Serializable {
 		data = new String("");
 	}
 
+	@Override
 	public void write(String text) {
 		data = text;
 	}
 
+	@Override
 	public String read() {
 		return data;
 	}
