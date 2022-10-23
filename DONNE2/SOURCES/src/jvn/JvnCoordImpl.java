@@ -156,6 +156,8 @@ public class JvnCoordImpl
                 idObjectMap.put(joi, obj);
                 // writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
+            } else {
+                return idObjectMap.get(joi).jvnGetSharedObject();
             }
         }
         // synchro problems
