@@ -14,7 +14,6 @@ import jvn.*;
 import jvn.DynamicProxy.JvnObjectInvocationHandler;
 
 import java.io.*;
-import java.lang.reflect.Proxy;
 
 public class Irc {
 	public TextArea text;
@@ -28,21 +27,8 @@ public class Irc {
 	 **/
 	public static void main(String argv[]) {
 		try {
-			// initialize JVN
-			JvnServerImpl js = JvnServerImpl.jvnGetServer();
-			
-			// look up the IRC object in the JVN server
-			// if not found, create it, and register it in the JVN server
-			JvnObject joForProxy = js.jvnLookupObject("IRC");
-			// Create a JvnObject with proxy
-			
-			if (joForProxy == null) {
-				joForProxy = js.jvnCreateObject((Serializable) new Sentence());
-				// after creation, I have a write lock on the object
-				joForProxy.jvnUnlock();
-				js.jvnRegisterObject("IRC", joForProxy);
-			}
-			InterfaceSentence InterSentence = (InterfaceSentence) JvnObjectInvocationHandler.newInstance(joForProxy);
+
+			InterfaceSentence InterSentence = (InterfaceSentence) JvnObjectInvocationHandler.newInstance(new Sentence(), "IRC");
 			// create the graphical part of the Chat application
 			new Irc(InterSentence);
 

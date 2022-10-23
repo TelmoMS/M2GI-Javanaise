@@ -85,7 +85,7 @@ public class JvnServerImpl
         int newObjectId;
         try {
             newObjectId = jrc.jvnGetObjectId();
-            JvnObject jo = new JvnObjectImpl(newObjectId, o);
+            JvnObject jo = new JvnObjectImpl(newObjectId, o, lockState.WLT);
             idObjectMap.put(newObjectId, jo);
             return jo;
         } catch (RemoteException e) {
@@ -219,17 +219,6 @@ public class JvnServerImpl
             return jo.jvnInvalidateWriterForReader();
         }
         return null;
-    }
-
-
-
-public static void main(String[] args) {
-        try {
-            JvnServerImpl js = JvnServerImpl.jvnGetServer();
-            System.out.println("Local server ready");
-        } catch (Exception e) {
-            System.out.println("Error : " + e.getMessage());
-        }
     }
 
 }

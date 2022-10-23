@@ -13,6 +13,13 @@ public class JvnObjectImpl implements JvnObject {
         this.state = lockState.NL;
     }
 
+    // Constructor for when the object is created, set the lock to WLT
+    public JvnObjectImpl(int id, Serializable object, lockState state) {
+        this.id = id;
+        this.object = object;
+        this.state = state;
+    }
+
     @Override
     public int jvnGetObjectId() throws JvnException {
         return id;

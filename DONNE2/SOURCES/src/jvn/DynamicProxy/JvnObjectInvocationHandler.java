@@ -1,9 +1,11 @@
 package jvn.DynamicProxy;
 
+import java.io.Serializable;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 
 import jvn.JvnObject;
+import jvn.JvnServerImpl;
 
 // https://www.baeldung.com/java-dynamic-proxies
 // https://www.baeldung.com/java-custom-annotation
@@ -15,7 +17,31 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
         this.jo = jo;
     }
 
+    // Takes a already registered javanaise object and returns the dynamic proxy
     public static Object newInstance(JvnObject jo) throws Exception {
+        return java.lang.reflect.Proxy.newProxyInstance(
+                jo.jvnGetSharedObject().getClass().getClassLoader(),
+                jo.jvnGetSharedObject().getClass().getInterfaces(),
+                new JvnObjectInvocationHandler(jo));
+    }
+
+    // Takes a string and an object and registers it in the Coordinator if needed
+    // returns the dynamic proxy of the object
+    public static Object newInstance(Object obj, String remoteObjectName) throws Exception {
+        // initialize JVN
+        JvnServerImpl js = JvnServerImpl.jvnGetServer();
+
+        // look up the IRC object in the JVN server
+        // if not found, create it, and register it in the JVN server
+        JvnObject jo = js.jvnLookupObject("IRC");
+
+        if (jo == null) {
+            jo = js.jvnCreateObject((Serializable) obj);
+            // after creation, I have a write lock on the object
+            jo.jvnUnlock();
+            js.jvnRegisterObject("IRC", jo);
+        }
+
         return java.lang.reflect.Proxy.newProxyInstance(
                 jo.jvnGetSharedObject().getClass().getClassLoader(),
                 jo.jvnGetSharedObject().getClass().getInterfaces(),
@@ -28,7 +54,7 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
 
         try {
             System.out.println("Invoked method: {" + method.getName() + "}");
-            System.out.println("    - annotation : " + method.getAnnotation(JvnOperation.class));
+            //System.out.println("    - annotation : " + method.getAnnotation(JvnOperation.class));
 
             if (method.getAnnotation(JvnOperation.class) != null) {
                 JvnOperation jvnOperation = method.getAnnotation(JvnOperation.class);
@@ -44,7 +70,7 @@ public class JvnObjectInvocationHandler implements InvocationHandler {
 
             // Set the method to accessible
             method.setAccessible(true);
-            result = method.invoke(jo.jvnGetSharedObject(),args);
+            result = method.invoke(jo.jvnGetSharedObject(), args);
 
             jo.jvnUnlock();
 

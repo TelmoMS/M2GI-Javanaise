@@ -76,9 +76,11 @@ public class JvnCoordImpl
         if (nameIdMap.containsKey(jon)) {
             throw new JvnException("Object already registered");
         }
-        int id = jo.jvnGetObjectId();
-        nameIdMap.put(jon, id);
-        idObjectMap.put(id, jo);
+        int joi = jo.jvnGetObjectId();
+        nameIdMap.put(jon, joi);
+        idObjectMap.put(joi, jo);
+        // When an object is registered, it has a write lock in the server that created it
+        writers.put(joi, js);
     }
 
     /**
