@@ -13,12 +13,18 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 
 public class JvnCoordImpl
         extends UnicastRemoteObject
-        implements JvnRemoteCoord {
+        implements JvnRemoteCoord, Serializable {
 
     /**
      *
@@ -43,6 +49,7 @@ public class JvnCoordImpl
         this.writers = new HashMap<Integer, JvnRemoteServer>();
         this.readers = new HashMap<Integer, ArrayList<JvnRemoteServer>>();
         this.newObjectId = 0;
+        //jvnLoadState();
 
         Registry r = LocateRegistry.createRegistry(2100);
         r.bind("JvnCoord", this);
@@ -58,7 +65,9 @@ public class JvnCoordImpl
     public synchronized int jvnGetObjectId()
             throws java.rmi.RemoteException, jvn.JvnException {
         System.out.println(newObjectId);
-        return newObjectId++;
+        int id = newObjectId++;
+        jvnSaveState();
+        return id;
     }
 
     /**
@@ -80,7 +89,8 @@ public class JvnCoordImpl
         nameIdMap.put(jon, joi);
         idObjectMap.put(joi, jo);
         // When an object is registered, it has a write lock in the server that created it
-        //writers.put(joi, js);
+        writers.put(joi, js);
+        jvnSaveState();
     }
 
     /**
@@ -98,7 +108,11 @@ public class JvnCoordImpl
         }
         int joi = nameIdMap.get(jon);
         System.out.println("JvnCoordImpl: jvnLookupObject: " + jon + " id: " + joi);
-        return idObjectMap.get(joi);
+        jvnSaveState();
+        JvnObject jo = idObjectMap.get(joi);
+        // When he looks up an object, he doesnt have a lock on it
+        jo.setLockState(lockState.NL);
+        return jo;
     }
 
     /**
@@ -116,23 +130,14 @@ public class JvnCoordImpl
             throw new JvnException("Object not found on Lock Read");
         }
         if (writers.containsKey(joi)) {
-            JvnObject obj;
-            if (!writers.get(joi).equals(js)) {
-                obj = (JvnObject) writers.get(joi).jvnInvalidateWriter(joi);
-            } else {
-                obj = (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi);
+            idObjectMap.put(joi, (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi));
+            if (writers.get(joi) != js) {
+                addReader(joi, writers.get(joi));
             }
-            idObjectMap.put(joi, obj);
             writers.remove(joi);
         }
-        if (readers.containsKey(joi)) {
-            if (!readers.get(joi).contains(js)) {
-                readers.get(joi).add(js);
-            }
-        } else {
-            readers.put(joi, new ArrayList<JvnRemoteServer>());
-            readers.get(joi).add(js);
-        }
+        addReader(joi, js);
+        jvnSaveState();
         return idObjectMap.get(joi).jvnGetSharedObject();
     }
 
@@ -147,6 +152,20 @@ public class JvnCoordImpl
     public synchronized Serializable jvnLockWrite(int joi, JvnRemoteServer js)
             throws java.rmi.RemoteException, JvnException {
         System.out.println("JvnCoordImpl: jvnLockWrite: " + joi);
+
+        // Print writers state
+        System.out.println("Writers: ");
+        for (JvnRemoteServer jrs : writers.values()) {
+            System.out.println("    - writer");
+        }
+        // Print readers state
+        System.out.println("Readers: ");
+        for (ArrayList<JvnRemoteServer> ral : readers.values()) {
+            for (JvnRemoteServer jrs : ral) {
+                System.out.println("    - reader");
+            }
+        }
+
         if (!idObjectMap.containsKey(joi)) {
             throw new JvnException("Object not found on Lock Write");
         }
@@ -156,8 +175,6 @@ public class JvnCoordImpl
                 idObjectMap.put(joi, obj);
                 // writers.get(joi).jvnInvalidateWriter(joi);
                 writers.remove(joi);
-            } else {
-                return idObjectMap.get(joi).jvnGetSharedObject();
             }
         }
         // synchro problems
@@ -171,6 +188,7 @@ public class JvnCoordImpl
             readers.remove(joi);
         }
         writers.put(joi, js);
+        jvnSaveState();
         return idObjectMap.get(joi).jvnGetSharedObject();
     }
 
@@ -188,9 +206,58 @@ public class JvnCoordImpl
             value.remove(js);
         });
         writers.values().remove(js);
+        jvnSaveState();
     }
 
-    
+    // Save the JVN server state to a file
+    public void jvnSaveState() throws java.rmi.RemoteException, JvnException {
+        try {
+            File f = new File("jvnCoordState.ser");
+            // Create the file if it doesn't exist
+            f.createNewFile();
+            FileOutputStream fileOut = new FileOutputStream(f);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(this);
+            out.close();
+            fileOut.close();
+            System.out.println("Serialized data is saved in jvnCoordState.ser");
+        } catch (IOException i) {
+            i.printStackTrace();
+        }
+    }
+
+    // Load the JVN server state from a file
+    public void jvnLoadState() throws java.rmi.RemoteException, JvnException {
+        try {
+            File f = new File("jvnCoordState.ser");
+            if (!f.isFile() || !f.canRead()) return;
+            FileInputStream fileIn = new FileInputStream(f);
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            JvnCoordImpl jvnCoord = (JvnCoordImpl) in.readObject();
+            in.close();
+            fileIn.close();
+            this.idObjectMap = jvnCoord.idObjectMap;
+            this.nameIdMap = jvnCoord.nameIdMap;
+            this.readers = jvnCoord.readers;
+            this.writers = jvnCoord.writers;
+            System.out.println("JvnCoordImpl: jvnLoadState");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return;
+        }
+    }
+
+    public void addReader(int joi, JvnRemoteServer js) {
+        if (readers.containsKey(joi)) {
+            if (!readers.get(joi).contains(js)) {
+                readers.get(joi).add(js);
+            }
+        } else {
+            readers.put(joi, new ArrayList<JvnRemoteServer>());
+            readers.get(joi).add(js);
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         JvnCoordImpl coord = new JvnCoordImpl();
     }

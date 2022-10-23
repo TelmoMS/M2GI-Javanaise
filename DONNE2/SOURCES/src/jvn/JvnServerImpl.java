@@ -83,7 +83,7 @@ public class JvnServerImpl
             throws jvn.JvnException {
         try {
             int newObjectId = jrc.jvnGetObjectId();
-            JvnObject jo = new JvnObjectImpl(newObjectId, o);
+            JvnObject jo = new JvnObjectImpl(newObjectId, o, lockState.WLT);
             idObjectMap.put(newObjectId, jo);
             return jo;
         } catch (RemoteException e) {

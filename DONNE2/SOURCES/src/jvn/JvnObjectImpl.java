@@ -33,10 +33,10 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnInvalidateReader() throws JvnException {
         switch (state) {
-            case RLT:
+            case RLT, RLT_WLC:
                 try {
                     wait();
-                    System.out.println("RLT -> NL");
+                    System.out.println(state + " -> NL");
                     state = lockState.NL;
                 } catch (InterruptedException e) {
                     throw new JvnException("Interrupted while waiting for lock");
@@ -94,10 +94,6 @@ public class JvnObjectImpl implements JvnObject {
         System.out.println("Locking read...");
         switch (state) {
             case RLC:
-                /*
-                 * JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
-                 * object = js1.jvnLockRead(id);
-                 */
                 state = lockState.RLT;
                 System.out.println("RLC -> RLT");
                 break;
@@ -154,5 +150,10 @@ public class JvnObjectImpl implements JvnObject {
             default:
         }
         notify();
+    }
+
+    @Override
+    public void setLockState(lockState state) {
+        this.state = state;
     }
 }
