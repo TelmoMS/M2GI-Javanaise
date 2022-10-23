@@ -57,7 +57,7 @@ public class JvnCoordImpl
      **/
     public synchronized int jvnGetObjectId()
             throws java.rmi.RemoteException, jvn.JvnException {
-        // to be completed
+        System.out.println(newObjectId);
         return newObjectId++;
     }
 
@@ -80,7 +80,7 @@ public class JvnCoordImpl
         nameIdMap.put(jon, joi);
         idObjectMap.put(joi, jo);
         // When an object is registered, it has a write lock in the server that created it
-        writers.put(joi, js);
+        //writers.put(joi, js);
     }
 
     /**
@@ -96,9 +96,9 @@ public class JvnCoordImpl
         if (!nameIdMap.containsKey(jon)) {
             return null;
         }
-        int idObject = nameIdMap.get(jon);
-        System.out.println("JvnCoordImpl: jvnLookupObject: " + jon + " id: " + idObject);
-        return idObjectMap.get(idObject);
+        int joi = nameIdMap.get(jon);
+        System.out.println("JvnCoordImpl: jvnLookupObject: " + jon + " id: " + joi);
+        return idObjectMap.get(joi);
     }
 
     /**

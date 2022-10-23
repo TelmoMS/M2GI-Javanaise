@@ -81,11 +81,9 @@ public class JvnServerImpl
      **/
     public JvnObject jvnCreateObject(Serializable o)
             throws jvn.JvnException {
-        // to be completed
-        int newObjectId;
         try {
-            newObjectId = jrc.jvnGetObjectId();
-            JvnObject jo = new JvnObjectImpl(newObjectId, o, lockState.WLT);
+            int newObjectId = jrc.jvnGetObjectId();
+            JvnObject jo = new JvnObjectImpl(newObjectId, o);
             idObjectMap.put(newObjectId, jo);
             return jo;
         } catch (RemoteException e) {

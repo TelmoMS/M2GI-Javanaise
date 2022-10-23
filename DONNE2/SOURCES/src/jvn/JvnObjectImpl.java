@@ -122,18 +122,11 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnLockWrite() throws JvnException {
         System.out.println("Locking write...");
-        switch (state) {
-            case WLT, WLC:
+        switch (state) { 
+            case WLT, WLC, RLT_WLC:
                 System.out.println(state + " -> WLT");
-                JvnServerImpl js1 = JvnServerImpl.jvnGetServer();
-                object = js1.jvnLockWrite(id);
                 state = lockState.WLT;
                 break;
-            /*
-             * case WLC:
-             * state = lockState.WLT;
-             * break;
-             */
             default:
                 System.out.println(state + " -> WLT");
                 JvnServerImpl js = JvnServerImpl.jvnGetServer();

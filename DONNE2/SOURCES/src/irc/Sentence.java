@@ -8,8 +8,6 @@
 
 package irc;
 
-import jvn.DynamicProxy.JvnOperation;
-
 public class Sentence implements java.io.Serializable, InterfaceSentence {
 	/**
 	 * 
