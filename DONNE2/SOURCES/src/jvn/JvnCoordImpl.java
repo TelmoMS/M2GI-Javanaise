@@ -49,7 +49,7 @@ public class JvnCoordImpl
         this.writers = new HashMap<Integer, JvnRemoteServer>();
         this.readers = new HashMap<Integer, ArrayList<JvnRemoteServer>>();
         this.newObjectId = 0;
-        //jvnLoadState();
+        // jvnLoadState();
 
         Registry r = LocateRegistry.createRegistry(2100);
         r.bind("JvnCoord", this);
@@ -103,6 +103,7 @@ public class JvnCoordImpl
     public synchronized JvnObject jvnLookupObject(String jon, JvnRemoteServer js)
             throws java.rmi.RemoteException, jvn.JvnException {
 
+        // If the object is not registered, return null
         if (!nameIdMap.containsKey(jon)) {
             return null;
         }
@@ -110,7 +111,7 @@ public class JvnCoordImpl
         System.out.println("JvnCoordImpl: jvnLookupObject: " + jon + " id: " + joi);
         jvnSaveState();
         JvnObject jo = idObjectMap.get(joi);
-        // When he looks up an object, he doesnt have a lock on it
+        // When a server looks up an object, he doesnt have a lock on it
         jo.setLockState(lockState.NL);
         return jo;
     }
@@ -129,13 +130,18 @@ public class JvnCoordImpl
         if (!idObjectMap.containsKey(joi)) {
             throw new JvnException("Object not found on Lock Read");
         }
+        // If the object has writers we invalide them for readers
         if (writers.containsKey(joi)) {
             idObjectMap.put(joi, (JvnObject) writers.get(joi).jvnInvalidateWriterForReader(joi));
+            // If the server invalidated for reader is not the same as the one that
+            // requested the lock, we add it to the readers list
             if (writers.get(joi) != js) {
                 addReader(joi, writers.get(joi));
             }
+            // We remove the writer from the writers list
             writers.remove(joi);
         }
+        // Add the server to the readers list
         addReader(joi, js);
         jvnSaveState();
         return idObjectMap.get(joi).jvnGetSharedObject();
@@ -154,22 +160,21 @@ public class JvnCoordImpl
         System.out.println("JvnCoordImpl: jvnLockWrite: " + joi);
 
         // Print writers state
-        System.out.println("Writers: ");
-        for (JvnRemoteServer jrs : writers.values()) {
-            System.out.println("    - writer");
-        }
+        System.out.println("Writers: " + writers.size());
+
         // Print readers state
-        System.out.println("Readers: ");
+        System.out.print("Readers: ");
         for (ArrayList<JvnRemoteServer> ral : readers.values()) {
-            for (JvnRemoteServer jrs : ral) {
-                System.out.println("    - reader");
-            }
+            System.out.println(ral.size());
         }
 
         if (!idObjectMap.containsKey(joi)) {
             throw new JvnException("Object not found on Lock Write");
         }
+        // If the object has writers 
         if (writers.containsKey(joi)) {
+            // If the writer is not the same as the one requesting the lock
+            // Invalidate the writer
             if (!writers.get(joi).equals(js)) {
                 JvnObject obj = (JvnObject) writers.get(joi).jvnInvalidateWriter(joi);
                 idObjectMap.put(joi, obj);
@@ -177,8 +182,10 @@ public class JvnCoordImpl
                 writers.remove(joi);
             }
         }
-        // synchro problems
+
+        // If the object has readers
         if (readers.containsKey(joi)) {
+            // Invalidate all readers
             for (JvnRemoteServer reader : readers.get(joi)) {
                 // Don't invalidate reader if it's the server asking for the write lock
                 if (!reader.equals(js)) {
@@ -209,7 +216,7 @@ public class JvnCoordImpl
         jvnSaveState();
     }
 
-    // Save the JVN server state to a file
+    // Save the JVN server state to a .ser file
     public void jvnSaveState() throws java.rmi.RemoteException, JvnException {
         try {
             File f = new File("jvnCoordState.ser");
@@ -226,11 +233,12 @@ public class JvnCoordImpl
         }
     }
 
-    // Load the JVN server state from a file
+    // Load the JVN server state from a .ser file
     public void jvnLoadState() throws java.rmi.RemoteException, JvnException {
         try {
             File f = new File("jvnCoordState.ser");
-            if (!f.isFile() || !f.canRead()) return;
+            if (!f.isFile() || !f.canRead())
+                return;
             FileInputStream fileIn = new FileInputStream(f);
             ObjectInputStream in = new ObjectInputStream(fileIn);
             JvnCoordImpl jvnCoord = (JvnCoordImpl) in.readObject();
@@ -247,6 +255,7 @@ public class JvnCoordImpl
         }
     }
 
+    // Method to add a reader to the readers list
     public void addReader(int joi, JvnRemoteServer js) {
         if (readers.containsKey(joi)) {
             if (!readers.get(joi).contains(js)) {

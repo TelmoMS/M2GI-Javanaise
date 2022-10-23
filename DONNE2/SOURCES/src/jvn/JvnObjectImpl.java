@@ -33,6 +33,7 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized void jvnInvalidateReader() throws JvnException {
         switch (state) {
+            // If the lock is RLT or RLT_WLC wait for the read lock to be cached/released
             case RLT, RLT_WLC:
                 try {
                     wait();
@@ -52,6 +53,7 @@ public class JvnObjectImpl implements JvnObject {
     @Override
     public synchronized Serializable jvnInvalidateWriter() throws JvnException {
         switch (state) {
+            // If the lock is being used, wait for the write lock to be cached/released
             case WLT, RLT_WLC:
                 try {
                     wait();
@@ -97,6 +99,7 @@ public class JvnObjectImpl implements JvnObject {
                 state = lockState.RLT;
                 System.out.println("RLC -> RLT");
                 break;
+            // If we have the write lock cached, we can use it to read
             case WLC:
                 state = lockState.RLT_WLC;
                 System.out.println("WLC -> RLT_WLC");
