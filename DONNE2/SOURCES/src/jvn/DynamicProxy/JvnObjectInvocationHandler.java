@@ -7,8 +7,6 @@ import java.lang.reflect.Method;
 import jvn.JvnObject;
 import jvn.JvnServerImpl;
 
-// https://www.baeldung.com/java-dynamic-proxies
-// https://www.baeldung.com/java-custom-annotation
 public class JvnObjectInvocationHandler implements InvocationHandler {
 
     private JvnObject jo;
